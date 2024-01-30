@@ -52,9 +52,11 @@ After setting everything up, it's time to run it and wait for results. I run it 
 Despite I would expected more iteractions with the application, actually some strange requests and command has been launch against the server. I believe that most of them were conducted by automatized bots, but I'm quite happy with that anyway.
 Below some statistics collected:
 
-![Most used commands in the honeypot](/img/2024-01-09-Wazuh-and-Honeypot/command.png)
+{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/command.png" description="Most used commands in SSH honeypot" %}
 
-{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/suricata.png" description="My cat, Robert Downey Jr." %}
+{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/suricata.png" description="Suricata traffic classification" %}
+
+{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/user.png" description="Successfully logged users" %}
 
 
 Here the categorization of malicious traffics given by Suricata. I find some of them interesting:
