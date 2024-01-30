@@ -50,9 +50,12 @@ I decide to set it up in order to allow login with any username/password after a
 ### Results
 After setting everything up, it's time to run it and wait for results. I run it for about 72 hours.
 Despite I would expected more iteractions with the application, actually some strange requests and command has been launch against the server. I believe that most of them were conducted by automatized bots, but I'm quite happy with that anyway.
-Here some generals statistics collected with the SIEM.
+Below some statistics collected:
 
 ![Most used commands in the honeypot](/img/2024-01-09-Wazuh-and-Honeypot/command.png)
+
+{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/suricata.png" description="My cat, Robert Downey Jr." %}
+
 
 Here the categorization of malicious traffics given by Suricata. I find some of them interesting:
 - Attempted Administrator Privilege Gain. From Suricata it seems to be alerting against CVE_2018_11776. Details here: https://www.keysight.com/blogs/en/tech/nwvs/2022/06/03/strutting-to-remote-code-execution-anatomy-of-cve-2018-11776
