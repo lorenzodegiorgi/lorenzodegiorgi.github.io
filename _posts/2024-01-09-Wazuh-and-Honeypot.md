@@ -52,7 +52,7 @@ After setting everything up, it's time to run it and wait for results. I run it 
 Despite I would expected more iteractions with the application, actually some strange requests and command has been launch against the server. I believe that most of them were conducted by automatized bots, but I'm quite happy with that anyway.
 Here some generals statistics collected with the SIEM.
 
-![Most used commands in the honeypot][img/2024-01-09-Wazuh-and-Honeypot/command.png]
+![Most used commands in the honeypot](img/2024-01-09-Wazuh-and-Honeypot/command.png)
 
 Here the categorization of malicious traffics given by Suricata. I find some of them interesting:
 - Attempted Administrator Privilege Gain. From Suricata it seems to be alerting against CVE_2018_11776. Details here: https://www.keysight.com/blogs/en/tech/nwvs/2022/06/03/strutting-to-remote-code-execution-anatomy-of-cve-2018-11776
